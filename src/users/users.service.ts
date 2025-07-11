@@ -14,14 +14,19 @@ export class UsersService {
         return this.userRepository.save(newUser);
     }
 
-    findUserByEmail(email:string){
-        return this.userRepository.findOneBy({email});
+    findUserByEmailOrRuc(email: string, ruc: string) {
+        return this.userRepository.findOne({
+            where: [
+                { email: email },
+                { ruc: ruc }
+            ]
+        });
     }
 
     findUserByEmailWithPassword(email:string){
         return this.userRepository.findOne({
             where: {email},
-            select: ['id', 'name', 'email', 'password', 'role'],
+            select: ['id', 'email', 'password', 'ruc', 'role'],
         });
     }
 }

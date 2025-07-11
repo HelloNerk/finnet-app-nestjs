@@ -4,6 +4,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { SectorEmpresarial } from 'src/common/enums/sectorEmpresarial';
 
 @Injectable()
 export class AuthService {
@@ -14,19 +15,24 @@ export class AuthService {
     ){}
 
     async register(registerDto: RegisterDto){
-        const user = await this.usersService.findUserByEmail(registerDto.email);
+        const user = await this.usersService.findUserByEmailOrRuc(registerDto.email, registerDto.ruc);
+        
         if(user){
             throw new BadRequestException('User already exists');
         }
+
         await this.usersService.createUser({
-            name: registerDto.name,
-            fullName: registerDto.fullName,
             email: registerDto.email,
-            password: await bcrypt.hash(registerDto.password, 10)
+            password: await bcrypt.hash(registerDto.password, 10),
+            ruc: registerDto.ruc,
+            razonSocial: registerDto.razonSocial,
+            direccion: registerDto.direccion,
+            sectorEmpresarial: registerDto.sectorEmpresarial
         });
+
         return {
-            name: registerDto.name,
             email: registerDto.email,
+            ruc: registerDto.ruc,
         }
     }
 
@@ -49,8 +55,8 @@ export class AuthService {
         };
     }
 
-    async profile({email, role}: {email:string; role: string}){
+    async profile({email,ruc, role}: {email:string; ruc:string; role: string}){
 
-        return await this.usersService.findUserByEmail(email);
+        return await this.usersService.findUserByEmailOrRuc(email,ruc);
     }
 }

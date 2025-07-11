@@ -1,18 +1,11 @@
 import { Transform } from 'class-transformer';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsEnum, IsString, Max, MinLength } from 'class-validator';
+import { SectorEmpresarial } from 'src/common/enums/sectorEmpresarial';
 
 export class RegisterDto {
     
     @Transform(({ value }) => value.trim())
     @IsString()
-    @MinLength(3)
-    name:string;
-
-    @Transform(({ value }) => value.trim())
-    @IsString()
-    @MinLength(3)
-    fullName:string;
-
     @IsEmail()
     email: string;
 
@@ -20,4 +13,25 @@ export class RegisterDto {
     @IsString()
     @MinLength(6)
     password: string;
+
+    @Transform(({ value }) => value.trim())
+    @IsString()
+    @MinLength(11)
+    ruc: string;
+
+    @Transform(({ value }) => value.trim())
+    @IsString()
+    @MinLength(3)
+    razonSocial: string;
+
+    @Transform(({ value }) => value.trim())
+    @IsString()
+    @MinLength(3)
+    direccion: string;
+
+    @Transform(({ value }) => value.trim())
+    @IsString()
+    @IsEnum(SectorEmpresarial)
+    sectorEmpresarial: SectorEmpresarial;
+
 }
