@@ -1,9 +1,11 @@
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsOptional,
   IsNumber,
   IsEnum,
   Min,
+  IsDate,
 } from 'class-validator';
 import { MetodoAmortizacion } from 'src/common/enums/amortizacion.enum';
 import { Capitalizacion } from 'src/common/enums/capitalizacion.enum';
@@ -21,10 +23,6 @@ export class UpdateBonoDto {
   @IsOptional()
   descripcion?: string;
 
-  @IsEnum(Moneda)
-  @IsOptional()
-  moneda?: Moneda;
-
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -35,6 +33,16 @@ export class UpdateBonoDto {
   @IsOptional()
   valorComercial?: number;
 
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  fechaEmision?: Date;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  fechaVencimiento?: Date;
+
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -42,29 +50,55 @@ export class UpdateBonoDto {
 
   @IsEnum(TipoTasa)
   @IsOptional()
-  tipoTasa?: TipoTasa;
+  tipoTasaCupon?: TipoTasa;
+
+  @IsEnum(Capitalizacion)
+  @IsOptional() // Solo si la tasa es nominal
+  capitalizacionCupon?: Capitalizacion;
+
+  @IsEnum(TipoTasa)
+  @IsOptional()
+  tipoTasaMercado?: TipoTasa;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  tasaMercado?: number;
 
   @IsEnum(Capitalizacion)
   @IsOptional()
-  capitalizacion?: Capitalizacion;
+  capitalizacionMercado?: Capitalizacion;
 
   @IsEnum(FrecuenciaPago)
   @IsOptional()
   frecuenciaPago?: FrecuenciaPago;
 
   @IsNumber()
-  @Min(1)
+  @Min(0)
   @IsOptional()
-  plazoAnios?: number;
-
-  @IsEnum(MetodoAmortizacion)
-  @IsOptional()
-  metodoAmortizacion?: MetodoAmortizacion;
+  comision?: number;
 
   @IsNumber()
   @Min(0)
   @IsOptional()
-  tasaMercado?: number;
+  gastosAdministrativos?: number;
+
+  @IsEnum(PlazoGracia)
+  @IsOptional()
+  plazoGracia?: PlazoGracia;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional() // Solo si hay plazo de gracia
+  duracionPlazoGracia?: number;
+
+  @IsEnum(Moneda)
+  @IsOptional()
+  moneda?: Moneda;
+
+  @IsEnum(MetodoAmortizacion)
+  @IsOptional()
+  metodoAmortizacion?: MetodoAmortizacion;
 
   @IsNumber()
   @Min(0)
@@ -91,7 +125,4 @@ export class UpdateBonoDto {
   @IsOptional()
   cavali?: number;
 
-  @IsEnum(PlazoGracia)
-  @IsOptional()
-  plazoGracia?: PlazoGracia;
 }

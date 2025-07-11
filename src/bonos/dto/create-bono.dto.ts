@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -6,6 +7,7 @@ import {
   IsNotEmpty,
   Min,
   Max,
+  IsDate,
 } from 'class-validator';
 import { MetodoAmortizacion } from 'src/common/enums/amortizacion.enum';
 import { Capitalizacion } from 'src/common/enums/capitalizacion.enum';
@@ -25,11 +27,7 @@ export class CreateBonoDto {
 
   @IsNumber()
   @Min(1)
-
   userId: number; // Este campo se asigna automáticamente desde el token JWT
-
-  @IsEnum(Moneda)
-  moneda: Moneda;
 
   @IsNumber()
   @Min(0)
@@ -37,53 +35,91 @@ export class CreateBonoDto {
 
   @IsNumber()
   @Min(0)
-  valorComercial: number;
+  @IsOptional()
+  valorComercial?: number;
+
+  @IsDate()
+  @Type(() => Date)
+  fechaEmision: Date;
+
+  @IsDate()
+  @Type(() => Date)
+  fechaVencimiento: Date;
 
   @IsNumber()
   @Min(0)
   tasaCupon: number;
 
   @IsEnum(TipoTasa)
-  tipoTasa: TipoTasa;
+  tipoTasaCupon: TipoTasa;
 
   @IsEnum(Capitalizacion)
   @IsOptional() // Solo si la tasa es nominal
-  capitalizacion?: Capitalizacion;
+  capitalizacionCupon?: Capitalizacion;
+
+  @IsEnum(TipoTasa)
+  @IsOptional()
+  tipoTasaMercado?: TipoTasa;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  tasaMercado?: number;
+
+  @IsEnum(Capitalizacion)
+  @IsOptional() // Solo si la tasa es nominal
+  capitalizacionMercado?: Capitalizacion;
 
   @IsEnum(FrecuenciaPago)
   frecuenciaPago: FrecuenciaPago;
 
   @IsNumber()
-  @Min(1)
-  plazoAnios: number;
-
-  @IsEnum(MetodoAmortizacion)
-  metodoAmortizacion: MetodoAmortizacion;
+  @Min(0)
+  comision: number;
 
   @IsNumber()
   @Min(0)
-  tasaMercado: number;
-
-  @IsNumber()
-  @Min(0)
-  primaRedencion: number;
-
-  @IsNumber()
-  @Min(0)
-  estructuracion: number;
-
-  @IsNumber()
-  @Min(0)
-  colocacion: number;
-
-  @IsNumber()
-  @Min(0)
-  flotacion: number;
-
-  @IsNumber()
-  @Min(0)
-  cavali: number;
+  gastosAdministrativos: number;
 
   @IsEnum(PlazoGracia)
   plazoGracia: PlazoGracia;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional() // Solo si hay plazo de gracia
+  duracionPlazoGracia?: number;
+
+  @IsEnum(Moneda)
+  moneda: Moneda;
+
+  @IsEnum(MetodoAmortizacion)
+  @IsOptional()
+  metodoAmortizacion?: MetodoAmortizacion;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  primaRedencion?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  estructuracion?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  colocacion?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  flotacion?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  cavali?: number;
+
+
 }

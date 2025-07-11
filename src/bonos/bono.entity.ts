@@ -5,7 +5,7 @@ import { Moneda } from "src/common/enums/moneda.enum";
 import { PlazoGracia } from "src/common/enums/plazoGracia.enum";
 import { TipoTasa } from "src/common/enums/tipoTasa.enum";
 import { User } from "src/users/user.entity";
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
 export class Bono {
@@ -24,55 +24,75 @@ export class Bono {
     @Column({length: 500, nullable: true})
     descripcion: string;
 
-    @Column({type: 'enum', default: Moneda.USD, enum: Moneda})
-    moneda: Moneda;
-
     @Column({type: 'decimal', precision: 10, scale: 5})
     valorNominal: number;
 
-    @Column({type: 'decimal', precision: 10, scale: 5})
+    @Column({type: 'decimal', precision: 10, scale: 5, nullable: true})
     valorComercial: number;
+
+    @Column({type: 'date'})
+    fechaEmision: Date;
+
+    @Column({type: 'date'})
+    fechaVencimiento: Date;
 
     @Column({type: 'decimal', precision: 10, scale: 5})
     tasaCupon: number;
 
-    @Column({type:'enum', enum: TipoTasa})
-    tipoTasa: TipoTasa;
+    @Column({type: 'enum', enum: TipoTasa})
+    tipoTasaCupon: TipoTasa;
 
     @Column({type:'enum', enum: Capitalizacion, nullable: true})
-    capitalizacion: Capitalizacion;
+    capitalizacionCupon: Capitalizacion;
+
+    @Column({type:'enum', enum: TipoTasa, nullable: true})
+    tipoTasaMercado: TipoTasa;
+
+    @Column({type: 'decimal', precision: 10, scale: 5, nullable: true})
+    tasaMercado: number;
+
+    @Column({type:'enum', enum: Capitalizacion, nullable: true})
+    capitalizacionMercado: Capitalizacion;
 
     @Column({type:'enum', enum: FrecuenciaPago})
     frecuenciaPago: FrecuenciaPago;
 
-    @Column()
-    plazoAnios: number;
-
-    @Column({type: 'enum', default: MetodoAmortizacion.FRANCES, enum: MetodoAmortizacion})
-    metodoAmortizacion: MetodoAmortizacion;
+    @Column({type: 'decimal', precision: 10, scale: 5})
+    comision: number;
 
     @Column({type: 'decimal', precision: 10, scale: 5})
-    tasaMercado: number;
-
-    @Column({type: 'decimal', precision: 10, scale: 5})
-    primaRedencion: number;
-
-    @Column({type: 'decimal', precision: 10, scale: 5})
-    estructuracion: number;
-
-    @Column({type: 'decimal', precision: 10, scale: 5})
-    colocacion: number;
-
-    @Column({type: 'decimal', precision: 10, scale: 5})
-    flotacion: number;
-    
-    @Column({type: 'decimal', precision: 10, scale: 5})
-    cavali: number;
+    gastosAdministrativos: number;
 
     @Column({type: 'enum', default: PlazoGracia.NINGUNO, enum: PlazoGracia})
     plazoGracia: PlazoGracia;
 
+    @Column({type: 'integer', nullable: true})
+    duracionPlazoGracia: number;
+
+    @Column({type: 'enum', default: Moneda.PEN, enum: Moneda})
+    moneda: Moneda;
+
+    @Column({type: 'enum', default: MetodoAmortizacion.FRANCES, enum: MetodoAmortizacion})
+    metodoAmortizacion: MetodoAmortizacion;
+
+    @Column({type: 'decimal', precision: 10, scale: 5, nullable: true})
+    primaRedencion: number;
+
+    @Column({type: 'decimal', precision: 10, scale: 5, nullable: true})
+    estructuracion: number;
+
+    @Column({type: 'decimal', precision: 10, scale: 5, nullable: true})
+    colocacion: number;
+
+    @Column({type: 'decimal', precision: 10, scale: 5, nullable: true})
+    flotacion: number;
+    
+    @Column({type: 'decimal', precision: 10, scale: 5, nullable: true})
+    cavali: number;
+    
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)" })
     fechaCreacion: Date;
 
+    @UpdateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)", onUpdate: "CURRENT_TIMESTAMP(6)" })
+    fechaActualizacion: Date;
 }
