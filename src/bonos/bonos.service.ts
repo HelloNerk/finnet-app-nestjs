@@ -181,5 +181,19 @@ export class BonosService {
     }
 
 
-    calculate
+    calculateTCEA(cupones:Cupon[]): number {
+        // Implementar la lógica para calcular la TCEA (Tasa de Costo Efectivo Anual)
+        // Basado en los cupones generados
+        // Este es un ejemplo simple, necesitarás ajustar según tu lógica específica
+        let totalIntereses = 0;
+        let totalAmortizaciones = 0;
+
+        cupones.forEach(cupon => {
+            totalIntereses += cupon.interes;
+            totalAmortizaciones += cupon.amortizacion;
+        });
+
+        const tcea = (totalIntereses + totalAmortizaciones) / cupones.length; // Ejemplo simple
+        return tcea;
+    }
 }
