@@ -1,5 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { BonosService } from './bonos.service';
+import { BonosService, Cupon } from './bonos.service';
 import { create } from 'domain';
 import { CreateBonoDto } from './dto/create-bono.dto';
 import { UpdateBonoDto } from './dto/update-bono.dto';
@@ -39,7 +39,7 @@ export class BonosController {
     }
 
     @Post(':id/calculate')
-    async calculateResults(@Param('id') id: number) {
+    async calculateResults(@Param('id') id: number): Promise<Cupon[]> {
         return this.bonosService.calculateResults(id);
     }
 }
