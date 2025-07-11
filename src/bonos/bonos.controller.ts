@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 import { BonosService } from './bonos.service';
 import { create } from 'domain';
 import { CreateBonoDto } from './dto/create-bono.dto';
@@ -31,5 +31,15 @@ export class BonosController {
     @Put(':id')
     updateBono(@Param('id') id: number, @Body() updateBonoDto: UpdateBonoDto) {
         return this.bonosService.updateBono(id, updateBonoDto);
+    }
+
+    @Delete(':id')
+    deleteBono(@Param('id') id: number) {
+        return this.bonosService.deleteBono(id);
+    }
+
+    @Post(':id/calculate')
+    async calculateResults(@Param('id') id: number) {
+        return this.bonosService.calculateResults(id);
     }
 }
