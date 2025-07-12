@@ -111,11 +111,12 @@ export class BonosService {
         }
         
         const resultados = this.calculateTCEA(cupones, getMesesCapitalizacion(bono.capitalizacionCupon));
-        
+        const metricas = this.calcularMetricasBono(cupones, resultados.tcea, mesesFrecuencia);
 
         const data = {
             cupones: cupones,
-            resultados: resultados
+            resultados: resultados,
+            metricas: metricas,
         };
 
         // console.log('Calculating results for Bono:', bono);
@@ -259,82 +260,251 @@ export class BonosService {
 
 
     calculateTCEA(cupones: Cupon[], mesesFrecuencia: number = 6): any {
-    // Generar flujos de caja
-    const flujos: number[] = [];
-    
-    // Flujo inicial (dinero recibido, positivo)
-    flujos.push(cupones[0].saldoInicial);
-    
-    // Flujos de pagos (dinero pagado, negativo)
-    for (let i = 1; i < cupones.length; i++) {
-        if (cupones[i].cuota > 0) {
-            flujos.push(-cupones[i].cuota); // Negativo porque es pago
-        } else {
-            flujos.push(0); // Período de gracia
-        }
-    }
-    
-    console.log('Flujos de caja:', flujos);
-    
-    // Calcular TIR semestral usando Newton-Raphson
-    const tirSemestral = this.calcularTIR(flujos);
-    
-    // Convertir TIR semestral a TCEA anual
-    // TCEA = (1 + TIR_semestral)^2 - 1
-    const tcea = Math.pow(1 + tirSemestral, 2) - 1;
-    
-    // console.log('TIR Semestral:', tirSemestral * 100, '%');
-    // console.log('TCEA Anual:', tcea * 100, '%');
-    
-
-    const resultados = {
-        tir: tirSemestral * 100, // Convertir a porcentaje
-        tcea: tcea * 100 // Convertir a porcentaje
-    }
-    return resultados; // Retornar TCEA en porcentaje
-
-}
-
-private calcularTIR(flujos: number[]): number {
-    let tir = 0.1; // Estimación inicial 10% semestral
-    const precision = 0.000001;
-    const maxIteraciones = 100;
-    
-    for (let i = 0; i < maxIteraciones; i++) {
-        const vpn = this.calcularVPN(flujos, tir);
-        const vpnDerivada = this.calcularVPNDerivada(flujos, tir);
+        // Generar flujos de caja
+        const flujos: number[] = [];
         
-        if (Math.abs(vpnDerivada) < 1e-10) break;
+        // Flujo inicial (dinero recibido, positivo)
+        flujos.push(cupones[0].saldoInicial);
         
-        const nuevaTir = tir - vpn / vpnDerivada;
-        
-        if (Math.abs(nuevaTir - tir) < precision) {
-            return nuevaTir;
+        // Flujos de pagos (dinero pagado, negativo)
+        for (let i = 1; i < cupones.length; i++) {
+            if (cupones[i].cuota > 0) {
+                flujos.push(-cupones[i].cuota); // Negativo porque es pago
+            } else {
+                flujos.push(0); // Período de gracia
+            }
         }
         
-        tir = nuevaTir;
-    }
-    
-    return tir;
-}
+        console.log('Flujos de caja:', flujos);
+        
+        // Calcular TIR semestral usando Newton-Raphson
+        const tirSemestral = this.calcularTIR(flujos);
+        
+        // Convertir TIR semestral a TCEA anual
+        // TCEA = (1 + TIR_semestral)^2 - 1
+        const tcea = Math.pow(1 + tirSemestral, 2) - 1;
+        
+        // console.log('TIR Semestral:', tirSemestral * 100, '%');
+        // console.log('TCEA Anual:', tcea * 100, '%');
+        
 
-private calcularVPN(flujos: number[], tasa: number): number {
-    let vpn = 0;
-    
-    for (let i = 0; i < flujos.length; i++) {
-        vpn += flujos[i] / Math.pow(1 + tasa, i);
-    }
-    
-    return vpn;
-}
+        const resultados = {
+            tir: tirSemestral * 100, // Convertir a porcentaje
+            tcea: tcea * 100 // Convertir a porcentaje
+        }
+        return resultados; // Retornar TCEA en porcentaje
 
-private calcularVPNDerivada(flujos: number[], tasa: number): number {
-    let derivada = 0;
-    
-    for (let i = 1; i < flujos.length; i++) {
-        derivada -= (i * flujos[i]) / Math.pow(1 + tasa, i + 1);
     }
-    
-    return derivada;
-}
+
+    private calcularTIR(flujos: number[]): number {
+        let tir = 0.1; // Estimación inicial 10% semestral
+        const precision = 0.000001;
+        const maxIteraciones = 100;
+        
+        for (let i = 0; i < maxIteraciones; i++) {
+            const vpn = this.calcularVPN(flujos, tir);
+            const vpnDerivada = this.calcularVPNDerivada(flujos, tir);
+            
+            if (Math.abs(vpnDerivada) < 1e-10) break;
+            
+            const nuevaTir = tir - vpn / vpnDerivada;
+            
+            if (Math.abs(nuevaTir - tir) < precision) {
+                return nuevaTir;
+            }
+            
+            tir = nuevaTir;
+        }
+        
+        return tir;
+    }
+
+    private calcularVPN(flujos: number[], tasa: number): number {
+        let vpn = 0;
+        
+        for (let i = 0; i < flujos.length; i++) {
+            vpn += flujos[i] / Math.pow(1 + tasa, i);
+        }
+        
+        return vpn;
+    }
+
+    private calcularVPNDerivada(flujos: number[], tasa: number): number {
+        let derivada = 0;
+        
+        for (let i = 1; i < flujos.length; i++) {
+            derivada -= (i * flujos[i]) / Math.pow(1 + tasa, i + 1);
+        }
+        
+        return derivada;
+    }
+
+
+    /**
+     * Calcula el precio máximo del bono (Valor Presente de flujos futuros)
+     * @param cupones - Array de cupones
+     * @param tasaDescuento - Tasa de descuento (TCEA o tasa de mercado)
+     * @param mesesFrecuencia - Meses entre pagos (6 para semestral)
+     */
+    calcularPrecioMaximo(cupones: Cupon[], tasaDescuento: number, mesesFrecuencia: number): number {
+        let precioMaximo = 0;
+        
+        for (const cupon of cupones) {
+            if (cupon.periodo > 0 && cupon.cuota > 0) {
+                // Convertir período a años
+                const periodoAnual = (cupon.periodo * mesesFrecuencia) / 12;
+                
+                // Valor presente del flujo
+                const valorPresente = cupon.cuota / Math.pow(1 + tasaDescuento / 100, periodoAnual);
+                precioMaximo += valorPresente;
+            }
+        }
+        
+        return precioMaximo;
+    }
+
+    /**
+     * Calcula la duración (duration) del bono
+     * @param cupones - Array de cupones
+     * @param tasaDescuento - Tasa de descuento
+     * @param mesesFrecuencia - Meses entre pagos
+     */
+    calcularDuracion(cupones: Cupon[], tasaDescuento: number, mesesFrecuencia: number): number {
+        const precioMaximo = this.calcularPrecioMaximo(cupones, tasaDescuento, mesesFrecuencia);
+        let sumaPonderada = 0;
+        
+        for (const cupon of cupones) {
+            if (cupon.periodo > 0 && cupon.cuota > 0) {
+                const periodoAnual = (cupon.periodo * mesesFrecuencia) / 12;
+                const valorPresente = cupon.cuota / Math.pow(1 + tasaDescuento / 100, periodoAnual);
+                
+                // Duración = Σ(t × VP(CFt)) / Precio
+                sumaPonderada += periodoAnual * valorPresente;
+            }
+        }
+        
+        return sumaPonderada / precioMaximo;
+    }
+
+    /**
+     * Calcula la duración modificada del bono
+     * @param cupones - Array de cupones
+     * @param tasaDescuento - Tasa de descuento
+     * @param mesesFrecuencia - Meses entre pagos
+     */
+    calcularDuracionModificada(cupones: Cupon[], tasaDescuento: number, mesesFrecuencia: number): number {
+        const duracion = this.calcularDuracion(cupones, tasaDescuento, mesesFrecuencia);
+        
+        // Duración Modificada = Duración / (1 + r)
+        return duracion / (1 + tasaDescuento / 100);
+    }
+
+    /**
+     * Calcula la convexidad del bono
+     * @param cupones - Array de cupones
+     * @param tasaDescuento - Tasa de descuento
+     * @param mesesFrecuencia - Meses entre pagos
+     */
+    calcularConvexidad(cupones: Cupon[], tasaDescuento: number, mesesFrecuencia: number): number {
+        const precioMaximo = this.calcularPrecioMaximo(cupones, tasaDescuento, mesesFrecuencia);
+        let sumaConvexidad = 0;
+        
+        for (const cupon of cupones) {
+            if (cupon.periodo > 0 && cupon.cuota > 0) {
+                const periodoAnual = (cupon.periodo * mesesFrecuencia) / 12;
+                const valorPresente = cupon.cuota / Math.pow(1 + tasaDescuento / 100, periodoAnual);
+                
+                // Convexidad = Σ[t(t+1) × VP(CFt)] / [P × (1+r)²]
+                sumaConvexidad += periodoAnual * (periodoAnual + 1) * valorPresente;
+            }
+        }
+        
+        const denominador = precioMaximo * Math.pow(1 + tasaDescuento / 100, 2);
+        return sumaConvexidad / denominador;
+    }
+
+    /**
+     * Calcula la TREA (Tasa de Rendimiento Efectivo Anual) desde el punto de vista del bonista
+     * @param cupones - Array de cupones
+     * @param precioCompra - Precio al cual el bonista compra el bono
+     * @param mesesFrecuencia - Meses entre pagos
+     */
+    calcularTREA(cupones: Cupon[], precioCompra: number, mesesFrecuencia: number): number {
+        // Generar flujos de caja desde la perspectiva del bonista
+        const flujos: number[] = [];
+        
+        // Flujo inicial (dinero pagado por el bonista, negativo)
+        flujos.push(-precioCompra);
+        
+        // Flujos de cobros (dinero recibido por el bonista, positivo)
+        for (let i = 1; i < cupones.length; i++) {
+            if (cupones[i].cuota > 0) {
+                flujos.push(cupones[i].cuota); // Positivo porque recibe dinero
+            } else {
+                flujos.push(0); // Período de gracia
+            }
+        }
+        
+        console.log('Flujos TREA (bonista):', flujos);
+        
+        // Calcular TIR referencial del bonista
+        const tirReferencial = this.calcularTIRBonista(flujos);
+        
+        // Convertir TIR referencial a TREA anual
+        const periodosAnuales = 12 / mesesFrecuencia;
+        const trea = Math.pow(1 + tirReferencial, periodosAnuales) - 1;
+        
+        console.log('TIR Referencial Bonista:', tirReferencial * 100, '%');
+        console.log('TREA Anual:', trea * 100, '%');
+        
+        return trea * 100; // Retornar en porcentaje
+    }
+
+    /**
+     * Calcula la TIR para el bonista (similar al método anterior pero con flujos invertidos)
+     */
+    private calcularTIRBonista(flujos: number[]): number {
+        let tir = 0.1; // Estimación inicial 10% referencial
+        const precision = 0.000001;
+        const maxIteraciones = 100;
+        
+        for (let i = 0; i < maxIteraciones; i++) {
+            const vpn = this.calcularVPN(flujos, tir);
+            const vpnDerivada = this.calcularVPNDerivada(flujos, tir);
+            
+            if (Math.abs(vpnDerivada) < 1e-10) break;
+            
+            const nuevaTir = tir - vpn / vpnDerivada;
+            
+            if (Math.abs(nuevaTir - tir) < precision) {
+                return nuevaTir;
+            }
+            
+            tir = nuevaTir;
+        }
+        
+        return tir;
+    }
+
+    /**
+     * Método principal que calcula todas las métricas del bono
+     */
+    calcularMetricasBono(cupones: Cupon[], tasaDescuento: number, mesesFrecuencia: number, precioCompra?: number) {
+        const precioMaximo = this.calcularPrecioMaximo(cupones, tasaDescuento, mesesFrecuencia);
+        const duracion = this.calcularDuracion(cupones, tasaDescuento, mesesFrecuencia);
+        const duracionModificada = this.calcularDuracionModificada(cupones, tasaDescuento, mesesFrecuencia);
+        const convexidad = this.calcularConvexidad(cupones, tasaDescuento, mesesFrecuencia);
+        
+        // Calcular TREA si se proporciona precio de compra, sino usar el precio máximo
+        const precioParaTREA = precioCompra || precioMaximo;
+        const trea = this.calcularTREA(cupones, precioParaTREA, mesesFrecuencia);
+        
+        return {
+            precioMaximo: Number(precioMaximo.toFixed(2)),
+            duracion: Number(duracion.toFixed(4)),
+            duracionModificada: Number(duracionModificada.toFixed(4)),
+            convexidad: Number(convexidad.toFixed(6)),
+            trea: Number(trea.toFixed(2))
+        };
+    }
 }
