@@ -103,21 +103,26 @@ export class BonosService {
 
 
         if(bono.plazoGracia === 'TOTAL') {
-            return this.calcularConPlazoGraciaTotal(bono.duracionPlazoGracia, bono.valorNominal, Number(tasaEfectivaFinal), periodos, cupones);
+            cupones =  this.calcularConPlazoGraciaTotal(bono.duracionPlazoGracia, bono.valorNominal, Number(tasaEfectivaFinal), periodos, cupones);
         }else if(bono.plazoGracia === 'PARCIAL') {
-            return this.calcularConPlazoGraciaParcial(bono.duracionPlazoGracia, bono.valorNominal, Number(tasaEfectivaFinal), periodos, cupones);
+            cupones =  this.calcularConPlazoGraciaParcial(bono.duracionPlazoGracia, bono.valorNominal, Number(tasaEfectivaFinal), periodos, cupones);
         }else {
-            return this.calcularConPlazoGraciaNinguno(periodos,bono.valorNominal, Number(tasaEfectivaFinal), cupones, true);
+            cupones = this.calcularConPlazoGraciaNinguno(periodos,bono.valorNominal, Number(tasaEfectivaFinal), cupones, true);
         }
         
+        const resultados = this.calculateTCEA(cupones, getMesesCapitalizacion(bono.capitalizacionCupon));
+        
 
-
+        const data = {
+            cupones: cupones,
+            resultados: resultados
+        };
 
         // console.log('Calculating results for Bono:', bono);
         // // Aquí puedes implementar la lógica para calcular los resultados del bono
         // // Por ejemplo, calcular el rendimiento, el valor actual, etc.
         // // Retorna un objeto con los resultados calculados
-        return cupones;
+        return data;
     }
 
     convertirTasaEfectivaAEquivalente(tasaEfectiva: number, mesesCapitalizacion: number, mesesFrecuencia: number) {
@@ -253,19 +258,83 @@ export class BonosService {
     }
 
 
-    calculateTCEA(cupones:Cupon[]): number {
-        // Implementar la lógica para calcular la TCEA (Tasa de Costo Efectivo Anual)
-        // Basado en los cupones generados
-        // Este es un ejemplo simple, necesitarás ajustar según tu lógica específica
-        let totalIntereses = 0;
-        let totalAmortizaciones = 0;
-
-        cupones.forEach(cupon => {
-            totalIntereses += cupon.interes;
-            totalAmortizaciones += cupon.amortizacion;
-        });
-
-        const tcea = (totalIntereses + totalAmortizaciones) / cupones.length; // Ejemplo simple
-        return tcea;
+    calculateTCEA(cupones: Cupon[], mesesFrecuencia: number = 6): any {
+    // Generar flujos de caja
+    const flujos: number[] = [];
+    
+    // Flujo inicial (dinero recibido, positivo)
+    flujos.push(cupones[0].saldoInicial);
+    
+    // Flujos de pagos (dinero pagado, negativo)
+    for (let i = 1; i < cupones.length; i++) {
+        if (cupones[i].cuota > 0) {
+            flujos.push(-cupones[i].cuota); // Negativo porque es pago
+        } else {
+            flujos.push(0); // Período de gracia
+        }
     }
+    
+    console.log('Flujos de caja:', flujos);
+    
+    // Calcular TIR semestral usando Newton-Raphson
+    const tirSemestral = this.calcularTIR(flujos);
+    
+    // Convertir TIR semestral a TCEA anual
+    // TCEA = (1 + TIR_semestral)^2 - 1
+    const tcea = Math.pow(1 + tirSemestral, 2) - 1;
+    
+    // console.log('TIR Semestral:', tirSemestral * 100, '%');
+    // console.log('TCEA Anual:', tcea * 100, '%');
+    
+
+    const resultados = {
+        tir: tirSemestral * 100, // Convertir a porcentaje
+        tcea: tcea * 100 // Convertir a porcentaje
+    }
+    return resultados; // Retornar TCEA en porcentaje
+
+}
+
+private calcularTIR(flujos: number[]): number {
+    let tir = 0.1; // Estimación inicial 10% semestral
+    const precision = 0.000001;
+    const maxIteraciones = 100;
+    
+    for (let i = 0; i < maxIteraciones; i++) {
+        const vpn = this.calcularVPN(flujos, tir);
+        const vpnDerivada = this.calcularVPNDerivada(flujos, tir);
+        
+        if (Math.abs(vpnDerivada) < 1e-10) break;
+        
+        const nuevaTir = tir - vpn / vpnDerivada;
+        
+        if (Math.abs(nuevaTir - tir) < precision) {
+            return nuevaTir;
+        }
+        
+        tir = nuevaTir;
+    }
+    
+    return tir;
+}
+
+private calcularVPN(flujos: number[], tasa: number): number {
+    let vpn = 0;
+    
+    for (let i = 0; i < flujos.length; i++) {
+        vpn += flujos[i] / Math.pow(1 + tasa, i);
+    }
+    
+    return vpn;
+}
+
+private calcularVPNDerivada(flujos: number[], tasa: number): number {
+    let derivada = 0;
+    
+    for (let i = 1; i < flujos.length; i++) {
+        derivada -= (i * flujos[i]) / Math.pow(1 + tasa, i + 1);
+    }
+    
+    return derivada;
+}
 }

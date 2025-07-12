@@ -39,7 +39,7 @@ export class BonosController {
     }
 
     @Post(':id/calculate')
-    async calculateResults(@Param('id') id: number): Promise<Cupon[]> {
+    async calculateResults(@Param('id') id: number): Promise<any> {
         return this.bonosService.calculateResults(id);
     }
 }
