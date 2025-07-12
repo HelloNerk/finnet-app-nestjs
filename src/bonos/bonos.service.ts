@@ -88,13 +88,13 @@ export class BonosService {
         const mesesCapitalizacion = getMesesCapitalizacion(bono.capitalizacionCupon);
         console.log('Meses de capitalización:', mesesCapitalizacion);
         const tasaCuponNumerica = Number(bono.tasaCupon);
-        const tasaEfectivaFinal = parseFloat(
+        const tasaEfectivaFinal = 
             this.convertirTasaEfectivaAEquivalente(
                 tasaCuponNumerica / 100,
                 mesesCapitalizacion,
                 mesesFrecuencia
-            ).toFixed(8)
-        );
+            );
+        
         console.log('Tasa efectiva final:', tasaEfectivaFinal);
 
         let cupones: Cupon[]=[];
@@ -127,7 +127,44 @@ export class BonosService {
     }
 
     calcularConPlazoGraciaParcial(duracionPlazoGracia: number, valorNominal:number, tasaCupon:number, periodosTotales:number, cupones:Cupon[]){
-        return cupones;
+        let saldo: number = valorNominal;
+        let valorNominalFinal = valorNominal;
+        cupones.push({
+            periodo: 0,
+            saldoInicial: saldo,
+            amortizacion: 0,
+            interes: 0,
+            cuota: 0,
+            saldoFinal: valorNominalFinal
+        });
+        console.log('Valor Nominal:', valorNominal);
+        console.log('Tasa Cupon:', tasaCupon);
+
+        const interes:number = valorNominalFinal * tasaCupon;
+        const cuota:number = valorNominalFinal * tasaCupon;
+        for(let i=1; i <= duracionPlazoGracia; i++) {
+            cupones.push({
+                periodo: i,
+                saldoInicial: valorNominalFinal,
+                amortizacion: 0,
+                interes: interes,
+                cuota: cuota,
+                saldoFinal: valorNominalFinal
+            });
+            console.log(`Iteración ${i}: saldo=${saldo}, tasaCupon=${tasaCupon}`);
+            if (isNaN(saldo) || isNaN(tasaCupon)) {
+                throw new Error(`Error: saldo o tasaCupon es NaN en la iteración ${i}`);
+            }
+        }
+        console.log('valorNominalFinal:', valorNominalFinal);
+        console.log('Periodos totales:', periodosTotales);
+        const plazosRestantes:number = (periodosTotales - (duracionPlazoGracia));
+        console.log('Duración del plazo de gracia:', duracionPlazoGracia);
+        if(plazosRestantes <= 0){
+            return cupones;
+        }
+        console.log('Plazos restantes:', plazosRestantes);
+        return this.calcularConPlazoGraciaNinguno(plazosRestantes, valorNominalFinal, tasaCupon, cupones, false);
     }
 
     calcularConPlazoGraciaTotal(duracionPlazoGracia: number, valorNominal: number, tasaCupon: number, periodosTotales:number, cupones:Cupon[]){
