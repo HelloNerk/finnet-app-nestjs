@@ -11,17 +11,21 @@ export enum FrecuenciaPago{
 }
 
 export const FrecuenciasPagoValues = {
-    ANUAL: 360,
-    SEMESTRAL: 180,
-    CUATRIMESTRAL: 120,
-    TRIMESTRAL: 90,
-    BIMESTRAL: 60,
-    MENSUAL: 30,
-    QUINCENAL: 15,
-    SEMANAL: 7,
-    DIARIA: 1
+    ANUAL: 12,
+    SEMESTRAL: 6,
+    CUATRIMESTRAL: 4,
+    TRIMESTRAL: 3,
+    BIMESTRAL: 2,
+    MENSUAL: 1,
+    QUINCENAL: 0.5,
+    SEMANAL: 0.25,
+    DIARIA: 0.0333333 // Aproximadamente 1/30
 };
 
-export function getDiasFrecuenciaPago(frecuencia: FrecuenciaPago): number {
-    return FrecuenciasPagoValues[frecuencia] || 30; // Default to MENSUAL if not found
+export function getMesesFrecuenciaPago(frecuencia: FrecuenciaPago): number {
+    return FrecuenciasPagoValues[frecuencia] || 1; // Default a 1 mes si no se encuentra
+}
+
+export function diferenciaEnMeses(fechaInicio: Date, fechaFin: Date): number {
+    return (fechaFin.getFullYear() - fechaInicio.getFullYear()) * 12 + (fechaFin.getMonth() - fechaInicio.getMonth());
 }

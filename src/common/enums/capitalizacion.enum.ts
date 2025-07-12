@@ -11,17 +11,17 @@ export enum Capitalizacion{
 }
 
 export const CapitalizacionValues = {
-    ANUAL: 360,
-    SEMESTRAL: 180,
-    CUATRIMESTRAL: 120,
-    TRIMESTRAL: 90,
-    BIMESTRAL: 60,
-    MENSUAL: 30,
-    QUINCENAL: 15,
-    SEMANAL: 7,
-    DIARIA: 1
+    ANUAL: 12,
+    SEMESTRAL: 6,
+    CUATRIMESTRAL: 4,
+    TRIMESTRAL: 3,
+    BIMESTRAL: 2,
+    MENSUAL: 1,
+    QUINCENAL: 0.5,   // 15 días ≈ 0.5 meses
+    SEMANAL: 0.25,    // 7 días ≈ 0.25 meses
+    DIARIA: 0.0333333 // 1 día ≈ 1/30 meses
 };
 
-export function getDiasCapitalizacion(frecuencia: Capitalizacion): number {
-    return CapitalizacionValues[frecuencia] || 30; // Default to MENSUAL if not found
+export function getMesesCapitalizacion(frecuencia: Capitalizacion): number {
+    return CapitalizacionValues[frecuencia] || 1; // Default a 1 mes si no se encuentra
 }

@@ -4,11 +4,12 @@ import { Bono } from './bono.entity';
 import { Repository } from 'typeorm';
 import { CreateBonoDto } from './dto/create-bono.dto';
 import { UpdateBonoDto } from './dto/update-bono.dto';
-import { getDiasFrecuenciaPago } from 'src/common/enums/frecuenciaPago.enum';
 import e from 'express';
-import { getDiasCapitalizacion } from 'src/common/enums/capitalizacion.enum';
+import { getMesesCapitalizacion } from 'src/common/enums/capitalizacion.enum';
+import { diferenciaEnMeses, getMesesFrecuenciaPago } from 'src/common/enums/frecuenciaPago.enum';
 
 export interface Cupon {
+    periodo: number;
     saldoInicial: number;
     amortizacion: number;
     interes: number;
@@ -51,6 +52,8 @@ export class BonosService {
         }
         return this.bonosRepository.remove(bono);
     }
+    
+    
 
     async calculateResults(id:number){
         const bono = await this.findBonoById(id);
@@ -70,28 +73,41 @@ export class BonosService {
         //Calcular periodos de pago dias((fechaVencimiento - fechaEmision))/frecuenciaPago(dias)
         const fechaEmision = new Date(bono.fechaEmision);
         const fechaVencimiento = new Date(bono.fechaVencimiento);
-        const diasFrecuencia = getDiasFrecuenciaPago(bono.frecuenciaPago); // Por ejemplo, 180 para SEMESTRAL
-        const diasResta = Math.ceil(
-        (fechaVencimiento.getTime() - fechaEmision.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        const periodos = Math.floor(diasResta / diasFrecuencia) + 1;
+        const mesesFrecuencia = getMesesFrecuenciaPago(bono.frecuenciaPago); // Por ejemplo, 180 para SEMESTRAL
+        console.log('Meses de frecuencia:', mesesFrecuencia);
+        const mesesResta = diferenciaEnMeses(fechaEmision, fechaVencimiento);
+        console.log('Meses restantes:', mesesResta);
+        
+        if (mesesResta <= 0) {
+            throw new Error('La fecha de vencimiento debe ser posterior a la fecha de emisión.');
+        }
+
+        const periodos = Math.floor(mesesResta / mesesFrecuencia);
         console.log('Total de cuotas (incluyendo cuota 0):', periodos);
-        const capitalizacion = getDiasCapitalizacion(bono.capitalizacionCupon);
-        console.log('Días de capitalización:', capitalizacion);
+        console.log('Total de cuotas (incluyendo cuota 0):', periodos);
+        const mesesCapitalizacion = getMesesCapitalizacion(bono.capitalizacionCupon);
+        console.log('Meses de capitalización:', mesesCapitalizacion);
         const tasaCuponNumerica = Number(bono.tasaCupon);
         const tasaEfectivaFinal = parseFloat(
-        this.convertirTasaEfectivaAEquivalente(tasaCuponNumerica / 100, capitalizacion, diasFrecuencia).toFixed(8)
+            this.convertirTasaEfectivaAEquivalente(
+                tasaCuponNumerica / 100,
+                mesesCapitalizacion,
+                mesesFrecuencia
+            ).toFixed(8)
         );
         console.log('Tasa efectiva final:', tasaEfectivaFinal);
 
         let cupones: Cupon[]=[];
+
+        //Verificar si hay comision y gastos adicionales
+
 
         if(bono.plazoGracia === 'TOTAL') {
             return this.calcularConPlazoGraciaTotal(bono.duracionPlazoGracia, bono.valorNominal, Number(tasaEfectivaFinal), periodos, cupones);
         }else if(bono.plazoGracia === 'PARCIAL') {
             return this.calcularConPlazoGraciaParcial(bono.duracionPlazoGracia, bono.valorNominal, Number(tasaEfectivaFinal), periodos, cupones);
         }else {
-            return this.calcularConPlazoGraciaNinguno(periodos,bono.valorNominal, Number(tasaEfectivaFinal), cupones);
+            return this.calcularConPlazoGraciaNinguno(periodos,bono.valorNominal, Number(tasaEfectivaFinal), cupones, true);
         }
         
 
@@ -104,8 +120,10 @@ export class BonosService {
         return cupones;
     }
 
-    convertirTasaEfectivaAEquivalente(tasaEfectiva, tipoTasa, frecuenciaPago){
-        return (1+tasaEfectiva)**(frecuenciaPago/tipoTasa) - 1;
+    convertirTasaEfectivaAEquivalente(tasaEfectiva: number, mesesCapitalizacion: number, mesesFrecuencia: number) {
+        // mesesCapitalizacion: cada cuántos meses se capitaliza la tasa original
+        // mesesFrecuencia: cada cuántos meses es el pago
+        return Math.pow(1 + tasaEfectiva, mesesFrecuencia / mesesCapitalizacion) - 1;
     }
 
     calcularConPlazoGraciaParcial(duracionPlazoGracia: number, valorNominal:number, tasaCupon:number, periodosTotales:number, cupones:Cupon[]){
@@ -116,6 +134,7 @@ export class BonosService {
         let saldo: number = valorNominal;
         let valorNominalFinal = valorNominal;
         cupones.push({
+            periodo: 0,
             saldoInicial: saldo,
             amortizacion: 0,
             interes: 0,
@@ -133,6 +152,7 @@ export class BonosService {
             saldo = saldo * (1 + tasaCupon); // <-- esta es la fórmula correcta
             valorNominalFinal = saldo;
             cupones.push({
+                periodo: i,
                 saldoInicial: nominal,
                 amortizacion: 0,
                 interes: interes,
@@ -143,18 +163,31 @@ export class BonosService {
         }
         console.log('valorNominalFinal:', valorNominalFinal);
         console.log('Periodos totales:', periodosTotales);
-        console.log('Duración del plazo de gracia:', duracionPlazoGracia+1);
-        const plazosRestantes:number = (periodosTotales - (duracionPlazoGracia+1));
-        return this.calcularConPlazoGraciaNinguno(plazosRestantes, valorNominalFinal, tasaCupon, cupones);
+        console.log('Duración del plazo de gracia:', duracionPlazoGracia);
+        const plazosRestantes:number = (periodosTotales - (duracionPlazoGracia));
+        return this.calcularConPlazoGraciaNinguno(plazosRestantes, valorNominalFinal, tasaCupon, cupones, false);
     }
 
-    calcularConPlazoGraciaNinguno(plazos:number, capital:number, tasaCupon:number, cupones:Cupon[]){
+    calcularConPlazoGraciaNinguno(plazos:number, capital:number, tasaCupon:number, cupones:Cupon[], isPeriodZero:boolean){
         console.log('Plazos:', plazos);
         console.log('Capital:', capital);
         console.log('Tasa Cupon:', tasaCupon);
         const cuota:number = (capital * tasaCupon)/(1-((1+tasaCupon)**(-plazos)));
         console.log(`Cuota a pagar por periodo sin plazo de gracia: ${cuota}`);
 
+        if(isPeriodZero){
+            cupones.push({
+                periodo: 0,
+                saldoInicial: capital,
+                amortizacion: 0,
+                interes: 0,
+                cuota: 0,
+                saldoFinal: capital
+            });
+        }
+
+
+        const cantCupones:number = cupones.length -1;
         let valorNominalFinal:number = capital;
         for(let i = 1; i <= plazos; i++) {
             let interes:number = valorNominalFinal * tasaCupon;
@@ -167,7 +200,9 @@ export class BonosService {
             }
             console.log(`Periodo ${i}: Interés: ${interes}, Amortización: ${amortizacion}, Valor Nominal Final: ${valorNominalFinal}`);
 
+            let period:number = isPeriodZero? i : i + cantCupones;
             cupones.push({
+                periodo: period,
                 saldoInicial: saldoInicial,
                 amortizacion: amortizacion,
                 interes: interes,
@@ -175,7 +210,7 @@ export class BonosService {
                 saldoFinal: valorNominalFinal
             })
         }
-
+        console.log('Cantidad de cupones: ', cupones.length);
         console.log('Cupones generados:', cupones);
         return cupones;
     }
