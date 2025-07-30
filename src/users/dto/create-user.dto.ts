@@ -1,5 +1,5 @@
 import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Length } from "class-validator";
-import { SectorEmpresarial } from "src/common/enums/sectorEmpresarial";
+
 
 export class CreateUserDto {
     @IsEmail()
@@ -12,19 +12,11 @@ export class CreateUserDto {
 
     @IsString()
     @IsNotEmpty()
-    @Length(11)
-    ruc: string;
-
+    firstName: string;
+    
     @IsString()
     @IsNotEmpty()
-    razonSocial: string;
+    lastName: string;
 
-    @IsString()
-    @IsNotEmpty()
-    direccion: string;
-
-    @IsEnum(SectorEmpresarial)
-    @IsOptional()
-    sectorEmpresarial?: SectorEmpresarial;
 
 }
