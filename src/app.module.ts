@@ -3,8 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-import { SubscriptionsModule } from './suscriptions/subscriptions.module';
-import { CoursesModule } from './courses/courses.module';
+import { BonosModule } from './bonos/bonos.module';
 
 @Module({
   imports: [
@@ -16,24 +15,23 @@ import { CoursesModule } from './courses/courses.module';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        type: 'postgres',
+        type: 'mysql',
         host: config.get<string>('DB_HOST'),
-        port: parseInt(config.get<string>('DB_PORT') ?? '5432', 10),
+        port: parseInt(config.get<string>('DB_PORT') ?? '3306', 10),
         username: config.get<string>('DB_USERNAME'),
         password: config.get<string>('DB_PASSWORD'),
         database: config.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: config.get<string>('NODE_ENV') !== 'production',
-        ssl: config.get<string>('NODE_ENV') === 'production'
-        ? { rejectUnauthorized: false }
-        : false,
+        synchronize: true,
+        ssl: {
+          rejectUnauthorized: false,
+        },
       }),
     }),
 
     UsersModule,
     AuthModule,
-    SubscriptionsModule,
-    CoursesModule
+    BonosModule,
   ],
 })
 export class AppModule {}

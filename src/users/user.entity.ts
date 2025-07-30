@@ -1,6 +1,6 @@
-
+import { Bono } from "src/bonos/bono.entity";
 import { Role } from "src/common/enums/role.enum";
-import { Subscription } from "src/suscriptions/subscription.entity";
+import { SectorEmpresarial } from "src/common/enums/sectorEmpresarial";
 import { Column, CreateDateColumn, DeleteDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
@@ -14,17 +14,20 @@ export class User{
     @Column({nullable: false, select: false})
     password: string;
 
-    @Column({nullable: false})
-    firstName: string;
+    @Column({unique:true, nullable: false, length: 11})
+    ruc: string;
 
     @Column({nullable: false})
-    lastName: string;
+    razonSocial: string;
+
+    @Column({nullable: false})
+    direccion: string;
+
+    @Column({type:'enum', enum: SectorEmpresarial, default: SectorEmpresarial.OTROS})
+    sectorEmpresarial: SectorEmpresarial;
 
     @Column({type: 'enum', default: Role.USER, enum: Role})
     role: Role;
-
-    @OneToMany(() => Subscription, subscription => subscription.user)
-    subscriptions: Subscription[];
 
     @CreateDateColumn({ type: "timestamp", default: () => "CURRENT_TIMESTAMP(6)" })
     createdAt: Date;
@@ -35,4 +38,6 @@ export class User{
     @DeleteDateColumn()
     deletedAt: Date;
 
+    @OneToMany(()=>Bono, bono => bono.user)
+    bonos: Bono[];
 }

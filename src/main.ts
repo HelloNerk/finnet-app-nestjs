@@ -21,8 +21,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   const config = new DocumentBuilder()
-    .setTitle('SoftCalc API')
-    .setDescription('API for SoftCalc application')
+    .setTitle('FinNet API')
+    .setDescription('API for FinNet application')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
